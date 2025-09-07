@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL Wins Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏈 NFL Wins Tracker</h1>
+            <div class="controls">
+                <button id="refreshBtn" onclick="refreshData()">🔄 Refresh Now</button>
+                <label>
+                    <input type="checkbox" id="autoRefresh" checked> Auto-refresh (5 min)
+                </label>
+            </div>
+        </header>
+
+        <div id="loadingIndicator" class="loading">Loading NFL data...</div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+        <div id="lastUpdated" class="last-updated"></div>
+
+        <main id="mainContent" style="display: none;">
+            <div class="summary-cards" id="summaryCards">
+                <!-- Summary cards will be populated by JavaScript -->
+            </div>
+
+            <div class="detailed-view">
+                <h2>Team Details</h2>
+                <div id="teamDetails" class="team-grid">
+                    <!-- Team details will be populated by JavaScript -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="data.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
