@@ -62,7 +62,7 @@ const teamAbbreviations = {
     "Los Angeles Chargers": "LAC",
     "Miami Dolphins": "MIA",
     "Pittsburgh Steelers": "PIT",
-    "Washington Commanders": "WAS",
+    "Washington Commanders": "WSH",
     "Indianapolis Colts": "IND",
     "Jacksonville Jaguars": "JAX",
     "Minnesota Vikings": "MIN",
