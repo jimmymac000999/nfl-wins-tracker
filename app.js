@@ -56,20 +56,46 @@ async function loadNFLData() {
     hideError();
     
     try {
-        // Using ESPN's public NFL scoreboard API
-        const response = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+        console.log('Fetching NFL team data...');
+        const teams = {};
         
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+        // Fetch data for each team using individual team APIs
+        const teamPromises = Object.entries(teamAbbreviations).map(async ([fullName, abbrev]) => {
+            try {
+                const response = await fetch(`https://site.api.espn.com/apis/site/v2/sports/football/nfl/teams/${abbrev.toLowerCase()}`);
+                if (response.ok) {
+                    const teamData = await response.json();
+                    const record = teamData.team?.record?.items?.[0];
+                    
+                    if (record) {
+                        const wins = record.stats?.find(stat => stat.name === 'wins')?.value || 0;
+                        const losses = record.stats?.find(stat => stat.name === 'losses')?.value || 0;
+                        
+                        teams[fullName] = {
+                            wins: parseInt(wins),
+                            losses: parseInt(losses),
+                            record: record.summary || `${parseInt(wins)}-${parseInt(losses)}`
+                        };
+                        
+                        console.log(`${fullName}: ${teams[fullName].record}`);
+                    }
+                }
+            } catch (error) {
+                console.log(`Failed to fetch data for ${fullName}:`, error.message);
+            }
+        });
+        
+        // Wait for all team data to be fetched
+        await Promise.allSettled(teamPromises);
+        
+        // If we got data for most teams, use it
+        if (Object.keys(teams).length > 20) {
+            nflData = teams;
+            lastUpdated = new Date();
+            updateDisplay();
+        } else {
+            throw new Error(`Only got data for ${Object.keys(teams).length} teams`);
         }
-        
-        const data = await response.json();
-        
-        // Also get standings data
-        const standingsResponse = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/standings');
-        const standingsData = standingsResponse.ok ? await standingsResponse.json() : null;
-        
-        processNFLData(data, standingsData);
         
     } catch (error) {
         console.error('Error loading NFL data:', error);
@@ -80,51 +106,6 @@ async function loadNFLData() {
     }
 }
 
-// Process NFL data from API
-function processNFLData(scoreboardData, standingsData) {
-    const teams = {};
-    
-    // Process standings data if available
-    if (standingsData && standingsData.children) {
-        standingsData.children.forEach(conference => {
-            if (conference.standings && conference.standings.entries) {
-                conference.standings.entries.forEach(team => {
-                    const teamName = normalizeTeamName(team.team.displayName);
-                    const wins = team.stats.find(stat => stat.name === 'wins')?.value || 0;
-                    const losses = team.stats.find(stat => stat.name === 'losses')?.value || 0;
-                    
-                    teams[teamName] = {
-                        wins: parseInt(wins),
-                        losses: parseInt(losses),
-                        record: `${wins}-${losses}`
-                    };
-                });
-            }
-        });
-    }
-    
-    // If standings data wasn't available, try to extract from scoreboard
-    if (Object.keys(teams).length === 0 && scoreboardData.events) {
-        scoreboardData.events.forEach(game => {
-            game.competitions[0].competitors.forEach(competitor => {
-                const teamName = normalizeTeamName(competitor.team.displayName);
-                const wins = competitor.records?.[0]?.summary?.split('-')[0] || 0;
-                const losses = competitor.records?.[0]?.summary?.split('-')[1] || 0;
-                
-                teams[teamName] = {
-                    wins: parseInt(wins),
-                    losses: parseInt(losses),
-                    record: competitor.records?.[0]?.summary || '0-0'
-                };
-            });
-        });
-    }
-    
-    nflData = teams;
-    lastUpdated = new Date();
-    
-    updateDisplay();
-}
 
 // Fallback mock data for development/testing
 function useMockData() {
