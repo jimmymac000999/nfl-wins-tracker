@@ -226,6 +226,13 @@ button:disabled {
     font-style: italic;
 }
 
+.team-efficiency {
+    font-size: 0.8rem;
+    color: #28a745;
+    font-weight: bold;
+    font-style: italic;
+}
+
 /* Teams by Owner Sections */
 .owner-sections {
     display: flex;

@@ -272,6 +272,8 @@ function updateTeamDetails() {
         const teamItem = document.createElement('div');
         teamItem.className = 'team-item';
         
+        const winsPerDollar = team.bet > 0 ? (team.data.wins / team.bet).toFixed(3) : '0.000';
+        
         teamItem.innerHTML = `
             <div class="team-info">
                 <div class="team-name">${team.name}</div>
@@ -281,6 +283,7 @@ function updateTeamDetails() {
                 <div class="team-wins">${team.data.wins} wins</div>
                 <div class="team-record">Record: ${team.data.record}</div>
                 <div class="team-bet">($${team.bet} bet)</div>
+                <div class="team-efficiency">${winsPerDollar} wins/$</div>
             </div>
         `;
         
