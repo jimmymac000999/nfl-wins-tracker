@@ -202,6 +202,12 @@ function updateDisplay() {
     
     // Update detailed team view
     updateTeamDetails();
+    
+    // Update teams by owner view
+    updateTeamsByOwner();
+    
+    // Update upcoming schedule
+    updateUpcomingSchedule();
 }
 
 // Update summary cards for each person
@@ -252,7 +258,7 @@ function updateTeamDetails() {
     const teamContainer = document.getElementById('teamDetails');
     teamContainer.innerHTML = '';
     
-    // Sort teams by wins (descending)
+    // Sort teams alphabetically by name
     const sortedTeams = Object.entries(teamAssignments)
         .map(([teamName, assignment]) => ({
             name: teamName,
@@ -260,7 +266,7 @@ function updateTeamDetails() {
             bet: assignment.bet,
             data: nflData[teamName] || { wins: 0, losses: 0, record: '0-0' }
         }))
-        .sort((a, b) => b.data.wins - a.data.wins);
+        .sort((a, b) => a.name.localeCompare(b.name));
     
     sortedTeams.forEach(team => {
         const teamItem = document.createElement('div');
@@ -280,6 +286,155 @@ function updateTeamDetails() {
         
         teamContainer.appendChild(teamItem);
     });
+}
+
+// Update teams by owner view
+function updateTeamsByOwner() {
+    const container = document.getElementById('teamsByOwner');
+    container.innerHTML = '';
+    
+    // Group teams by owner
+    const ownerGroups = {};
+    Object.entries(teamAssignments).forEach(([teamName, assignment]) => {
+        if (!ownerGroups[assignment.owner]) {
+            ownerGroups[assignment.owner] = [];
+        }
+        
+        const teamData = nflData[teamName] || { wins: 0, losses: 0, record: '0-0' };
+        ownerGroups[assignment.owner].push({
+            name: teamName,
+            data: teamData,
+            bet: assignment.bet
+        });
+    });
+    
+    // Sort owners by total wins (descending)
+    const sortedOwners = Object.entries(ownerGroups)
+        .map(([owner, teams]) => ({
+            owner,
+            teams: teams.sort((a, b) => b.data.wins - a.data.wins),
+            totalWins: teams.reduce((sum, team) => sum + team.data.wins, 0)
+        }))
+        .sort((a, b) => b.totalWins - a.totalWins);
+    
+    sortedOwners.forEach(({ owner, teams, totalWins }) => {
+        const section = document.createElement('div');
+        section.className = 'owner-section';
+        
+        section.innerHTML = `
+            <h3>
+                ${owner}
+                <span class="owner-total-wins">${totalWins} wins</span>
+            </h3>
+            <div class="owner-teams" id="owner-${owner.replace(' ', '-')}"></div>
+        `;
+        
+        const teamsContainer = section.querySelector('.owner-teams');
+        
+        teams.forEach(team => {
+            const teamItem = document.createElement('div');
+            teamItem.className = 'owner-team-item';
+            
+            teamItem.innerHTML = `
+                <div>
+                    <div class="team-name">${team.name}</div>
+                    <div class="team-bet">($${team.bet} bet)</div>
+                </div>
+                <div class="team-stats">
+                    <div class="team-wins">${team.data.wins} wins</div>
+                    <div class="team-record">${team.data.record}</div>
+                </div>
+            `;
+            
+            teamsContainer.appendChild(teamItem);
+        });
+        
+        container.appendChild(section);
+    });
+}
+
+// Update upcoming schedule
+async function updateUpcomingSchedule() {
+    const container = document.getElementById('upcomingSchedule');
+    container.innerHTML = '<div class="loading">Loading upcoming games...</div>';
+    
+    try {
+        // Fetch upcoming games from ESPN scoreboard
+        const response = await fetch('https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard');
+        if (!response.ok) throw new Error('Failed to fetch schedule');
+        
+        const data = await response.json();
+        const upcomingGames = [];
+        
+        if (data.events) {
+            data.events.forEach(event => {
+                const competition = event.competitions[0];
+                const gameStatus = event.status.type.name;
+                
+                // Only show upcoming games (not completed or in progress)
+                if (gameStatus === 'STATUS_SCHEDULED' || gameStatus === 'STATUS_POSTPONED') {
+                    const homeTeam = competition.competitors.find(c => c.homeAway === 'home');
+                    const awayTeam = competition.competitors.find(c => c.homeAway === 'away');
+                    
+                    if (homeTeam && awayTeam) {
+                        const homeTeamName = normalizeTeamName(homeTeam.team.displayName);
+                        const awayTeamName = normalizeTeamName(awayTeam.team.displayName);
+                        
+                        // Check if any of our owners have teams in this game
+                        const homeOwner = teamAssignments[homeTeamName]?.owner || null;
+                        const awayOwner = teamAssignments[awayTeamName]?.owner || null;
+                        
+                        if (homeOwner || awayOwner) {
+                            upcomingGames.push({
+                                date: new Date(event.date),
+                                homeTeam: homeTeamName,
+                                awayTeam: awayTeamName,
+                                homeOwner,
+                                awayOwner,
+                                displayDate: event.status.type.shortDetail || 'TBD',
+                                week: event.week?.number || 'TBD'
+                            });
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Sort by date
+        upcomingGames.sort((a, b) => a.date - b.date);
+        
+        container.innerHTML = '';
+        
+        if (upcomingGames.length === 0) {
+            container.innerHTML = '<div class="schedule-item"><div>No upcoming games found for this week.</div></div>';
+            return;
+        }
+        
+        upcomingGames.forEach(game => {
+            const gameItem = document.createElement('div');
+            gameItem.className = 'schedule-item';
+            
+            const owners = [];
+            if (game.awayOwner) owners.push(`${game.awayTeam.split(' ').pop()} (${game.awayOwner})`);
+            if (game.homeOwner) owners.push(`${game.homeTeam.split(' ').pop()} (${game.homeOwner})`);
+            
+            gameItem.innerHTML = `
+                <div class="schedule-game">
+                    <div class="schedule-teams">
+                        ${game.awayTeam} @ ${game.homeTeam}
+                    </div>
+                    <div class="schedule-time">${game.displayDate}</div>
+                </div>
+                ${owners.length > 0 ? `<div class="schedule-owners">Owners: ${owners.join(' vs ')}</div>` : ''}
+            `;
+            
+            container.appendChild(gameItem);
+        });
+        
+    } catch (error) {
+        console.error('Error loading schedule:', error);
+        container.innerHTML = '<div class="schedule-item"><div>Unable to load schedule. Please try again later.</div></div>';
+    }
 }
 
 // UI helper functions

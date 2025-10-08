@@ -226,6 +226,93 @@ button:disabled {
     font-style: italic;
 }
 
+/* Teams by Owner Sections */
+.owner-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.owner-section {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 5px solid #1e3c72;
+}
+
+.owner-section h3 {
+    color: #1e3c72;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.owner-total-wins {
+    background: #28a745;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.owner-teams {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 10px;
+}
+
+.owner-team-item {
+    background: white;
+    padding: 10px;
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 3px solid #28a745;
+}
+
+/* Schedule Grid */
+.schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 15px;
+}
+
+.schedule-item {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid #ff6b35;
+}
+
+.schedule-game {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.schedule-teams {
+    font-weight: bold;
+    color: #1e3c72;
+}
+
+.schedule-time {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.schedule-owners {
+    font-size: 0.9rem;
+    color: #666;
+    font-style: italic;
+    padding-top: 8px;
+    border-top: 1px solid #ddd;
+}
+
 @media (max-width: 768px) {
     .container {
         padding: 10px;
